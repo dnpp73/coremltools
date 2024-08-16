@@ -5190,9 +5190,39 @@ def repeat_interleave(context, node):
         x = mb.reshape(x=x, shape=(-1,))
     else:
         if dim.val != 0:
-            raise NotImplementedError(
-                "Conversion for torch.repeat_interleave with non-zero dim has not been implemented"
-            )
+            if dim.val == 1:
+                # print("context: ", context)
+                # print("node: ", node)
+                # print("x: ", x)
+                # print("x.val: ", x.val)
+                # print("x.op: ", x.op)
+                # print("x.shape: ", x.shape)
+                # print("repeats_val: ", repeats_val)
+                # print("dim.val: ", dim.val)
+
+                # `dim=1` case: Repeat elements along the second dimension
+
+                # Create a tensor with the repeat value, tile it along the second dimension
+                repeats_expanded = [1] * x.rank
+                repeats_expanded[1] = repeats_val
+
+                # Use tile to repeat the elements along the specified dimension
+                x_tiled = mb.tile(x=x, reps=repeats_expanded)
+
+                # Now reshape the tiled tensor to the correct shape
+                output_shape = list(x.shape)
+                output_shape[1] = output_shape[1] * repeats_val
+                result = mb.reshape(x=x_tiled, shape=output_shape, name=node.name)
+
+                context.add(result)
+                return
+                # raise NotImplementedError(
+                #     f"Conversion for torch.repeat_interleave with non-zero dim has not been implemented. dim.val: {dim.val}"
+                # )
+            else:
+                raise NotImplementedError(
+                    f"Conversion for torch.repeat_interleave with non-zero dim has not been implemented. dim.val: {dim.val}"
+                )
 
     """
     on a high level:
